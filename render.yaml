@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: kuban-street-special
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: "python server.py"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: START_BOT
+        value: "1"

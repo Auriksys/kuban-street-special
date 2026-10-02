@@ -1,0 +1,12 @@
+{
+  "status": "ready",
+  "server_online": true,
+  "tunnel_online": false,
+  "tunnel_type": "Localhost.run SSL Auto-Detect",
+  "public_url": "Ожидание запуска туннеля...",
+  "local_url": "http://localhost:8080",
+  "last_check": "2026-10-02 05:10:00",
+  "recent_logs": [
+    "[INFO] Система готова к автоматическому захвату публичного адреса."
+  ]
+}

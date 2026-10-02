@@ -1,0 +1,16 @@
+{
+  "subdomain": "kuban-street-special",
+  "preferred_tunnel": "auto",
+  "local_port": 8080,
+  "check_interval_seconds": 5,
+  "remote_check_interval_seconds": 12,
+  "auto_restart_server": true,
+  "auto_restart_tunnel": true,
+  "telegram_alerts": true,
+  "admin_telegram_chat_id": "8724125150",
+  "custom_domain": "https://kuban-special.ru",
+  "ngrok_auth_token": "",
+  "ngrok_domain": "",
+  "cloudflare_token": "",
+  "pinggy_token": ""
+}
