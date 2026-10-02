@@ -20,6 +20,25 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+# Auto-sync static assets to root for single-folder deployments
+try:
+    import shutil
+    _s_idx = os.path.join(BASE_DIR, 'static', 'index.html')
+    _r_idx = os.path.join(BASE_DIR, 'index.html')
+    if os.path.exists(_s_idx) and not os.path.exists(_r_idx):
+        shutil.copy2(_s_idx, _r_idx)
+    _s_css = os.path.join(BASE_DIR, 'static', 'css', 'style.css')
+    _r_css = os.path.join(BASE_DIR, 'style.css')
+    if os.path.exists(_s_css) and not os.path.exists(_r_css):
+        shutil.copy2(_s_css, _r_css)
+    _s_js = os.path.join(BASE_DIR, 'static', 'js')
+    if os.path.exists(_s_js):
+        for _f in os.listdir(_s_js):
+            if _f.endswith('.js') and not os.path.exists(os.path.join(BASE_DIR, _f)):
+                shutil.copy2(os.path.join(_s_js, _f), os.path.join(BASE_DIR, _f))
+except Exception:
+    pass
+
 try:
     from database import (
         init_db, get_db, DB_PATH, clear_all_data, seed_data, update_user_last_seen,
@@ -1161,8 +1180,23 @@ class KSSRequestHandler(http.server.BaseHTTPRequestHandler):
         rel_path = path.lstrip('/')
         full_path = os.path.join(STATIC_DIR, rel_path)
 
+        # Fallback to root BASE_DIR if not found in STATIC_DIR
+        if not os.path.exists(full_path):
+            alt_path = os.path.join(BASE_DIR, rel_path)
+            if os.path.exists(alt_path):
+                full_path = alt_path
+            else:
+                # Also check direct file in root (e.g. /css/style.css -> style.css, /js/app.js -> app.js)
+                basename = os.path.basename(rel_path)
+                root_file = os.path.join(BASE_DIR, basename)
+                if os.path.exists(root_file) and not os.path.isdir(root_file):
+                    full_path = root_file
+
         if not os.path.exists(full_path) or os.path.isdir(full_path):
-            full_path = os.path.join(STATIC_DIR, 'index.html')
+            if os.path.exists(os.path.join(STATIC_DIR, 'index.html')):
+                full_path = os.path.join(STATIC_DIR, 'index.html')
+            elif os.path.exists(os.path.join(BASE_DIR, 'index.html')):
+                full_path = os.path.join(BASE_DIR, 'index.html')
 
         mime_type, _ = mimetypes.guess_type(full_path)
         if not mime_type:

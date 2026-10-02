@@ -8,7 +8,12 @@ import os
 import json
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'kss.sqlite')
+_base_dir = os.path.dirname(__file__)
+_db_sub = os.path.join(_base_dir, 'db')
+if os.path.exists(_db_sub):
+    DB_PATH = os.path.join(_db_sub, 'kss.sqlite')
+else:
+    DB_PATH = os.path.join(_base_dir, 'kss.sqlite')
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -50,7 +55,6 @@ def init_db():
         c.execute('ALTER TABLE users ADD COLUMN losses INTEGER DEFAULT 0')
     except Exception:
         pass
-
 
     # Teams / Syndicates table
     c.execute('''
@@ -206,15 +210,6 @@ def init_db():
         except Exception:
             pass
 
-    for col, col_type in [
-        ('media_type', "TEXT DEFAULT 'image'"),
-        ('video_url', 'TEXT')
-    ]:
-        try:
-            c.execute(f'ALTER TABLE chat_messages ADD COLUMN {col} {col_type}')
-        except Exception:
-            pass
-
     # Chat Messages (Live Forum / Radio Channels)
     c.execute('''
     CREATE TABLE IF NOT EXISTS chat_messages (
@@ -227,28 +222,25 @@ def init_db():
         message TEXT NOT NULL,
         image_url TEXT,
         likes_count INTEGER DEFAULT 0,
+        media_type TEXT DEFAULT 'image',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
     )
     ''')
 
-    # Seed sample chat messages if empty
-    try:
-        c.execute('SELECT COUNT(*) FROM chat_messages')
-        if c.fetchone()[0] == 0:
-            sample_msgs = [
-                (1, "Красный_Чайзер", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", "Toyota Chaser (620 hp)", "general", "Салют пилотам Кубани! Сегодня к 23:30 собираемся на парковке OZ Mall. Зацепим телеметрию Dragy, кто хотел ролл 100-200 — подтягивайтесь!", None, 6),
-                (2, "Кубанский_Буст", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150", "Toyota Supra A90 (540 hp)", "radar", "На Семерых Ветрах в Новороссе асфальт чистый и сухой, тумана нет. Кто на тоге сегодня?", None, 4),
-                (3, "Ваг_Монстр", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150", "VW Golf 7R (480 hp)", "tech", "Залили новый софт на DSG DQ250 и Stage 3. Сняли 3.4 сек 0-100 с лаунча на обычном зацепе. В tech-ветке выложу логи наддува.", None, 9),
-                (4, "Армавирский_Дьявол", "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150", "ВАЗ 2107 Turbo (380 hp)", "battles", "Кто на квотер на OZ Mall? Выкатываем классику на 1.8 бара, ищем соперников на заднем приводе до 500 сил!", None, 7),
-                (1, "Красный_Чайзер", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150", "Toyota Chaser (620 hp)", "radar", "Внимание: на Ростовском шоссе перед выездом экипаж ДПС с камерой на треноге в кустах. Сбавили до 60.", None, 8)
-            ]
-            c.executemany('''
-                INSERT INTO chat_messages (user_id, callsign, avatar, car_name, channel, message, image_url, likes_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', sample_msgs)
-    except Exception as e:
-        print("Chat seed notice:", e)
+    for col, col_type in [
+        ('media_type', "TEXT DEFAULT 'image'"),
+        ('video_url', 'TEXT')
+    ]:
+        try:
+            c.execute(f'ALTER TABLE chat_messages ADD COLUMN {col} {col_type}')
+        except Exception:
+            pass
+
+    # Seed initial data if database is empty
+    c.execute('SELECT COUNT(*) FROM users')
+    if c.fetchone()[0] == 0:
+        seed_data(conn)
 
     conn.commit()
     conn.close()
@@ -307,9 +299,8 @@ def seed_data(conn=None):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', users)
 
-    # 3. Cars with Professional Telemetry (0-100, 100-200, 402m, Boost bar, Fuel, Dragy)
+    # 3. Cars
     cars = [
-        # (user_id, make, model, gen, year, plate, hp, torque, weight, drivetrain, aspiration, engine, 0-100, 402m, 100-200, boost, fuel, dragy, specs_json, photo, is_primary)
         (1, "Toyota", "Chaser", "JZX100", 1998, "К999УБ93", 460, 580, 1480, "RWD", "Турбо", "1JZ-GTE VVT-i", 4.1, 11.8, 7.8, 1.6, "АИ-100", 1,
          json.dumps({"turbo": "Garrett GTX3076R Gen2", "ecu": "AEM Infinity Standalone", "brakes": "Brembo 6-pot от C63 AMG", "suspension": "Tein Flex Z коиловеры", "tires": "Toyo Proxes R888R полуслик", "transmission": "R154 усиленная мешалка"}),
          "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800", 1),
@@ -339,7 +330,7 @@ def seed_data(conn=None):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', cars)
 
-    # 4. Iconic Spots of Krasnodar Krai
+    # 4. Spots
     spots = [
         ("OZ Mall Прямик", "oz-mall-drag", "Краснодарский край", "Краснодар", "Дрэг", 2, "Средняя", 1.2, 5, "Идеальный свежий асфальт", 45.0118, 39.1245, 
          "Главное место сбора драг-рейсеров Краснодара. Широкая прямая, отличный зацеп для лаунча и прогрева резины. Сборы каждую пятницу и субботу после 23:00.", "23:00 - 02:30", "Следите за хвостом при торможении, на съезде к ТЦ бывают лежачие полицейские.", "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800"),
@@ -370,7 +361,7 @@ def seed_data(conn=None):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', spots)
 
-    # 5. Battles Log (Real battle history)
+    # 5. Battles Log
     battles = [
         ("Дрэг 402м", 1, "OZ Mall Прямик", 3, 3, 1, 1, "", "0.4 сек (1.5 корпуса на финише)", "Golf R выстрелил с лаунча (1.6с 60ft), Chaser догонял на 3-й передаче, но не хватило дистанции", "https://youtube.com/watch?v=kss_drag_oz1", 30, "2026-09-26 23:45:00"),
         ("Тоге (Спуск)", 2, "Семь Ветров (Андреевский перевал)", 2, 2, 5, 5, "", "Отрыв более 50 метров к 8-й шпильке", "Supra на Cup2 резине показала невероятный держак в апексах. Silvia перегрела передние колодки к середине спуска", "", 45, "2026-09-24 01:20:00"),
@@ -452,7 +443,6 @@ def get_online_pilots(minutes=5):
 
 def add_map_marker(user_id, callsign, category, message, lat, lng, duration_minutes=30, photo_url=None):
     try:
-        # Strictly enforce 20 to 49 minutes
         duration = min(49, max(20, int(duration_minutes)))
         now = datetime.now()
         expires = now + timedelta(minutes=duration)
@@ -483,7 +473,6 @@ def get_active_map_markers():
         c = conn.cursor()
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # Auto-delete expired markers
         c.execute('DELETE FROM map_markers WHERE expires_at < ?', (now_str,))
         conn.commit()
 
@@ -541,7 +530,6 @@ def vote_clear_map_marker(marker_id):
         row = c.fetchone()
         votes = row['clear_votes'] if row else 1
         if votes >= 2:
-            # 2 independent pilots confirmed road is clear -> remove marker!
             c.execute('DELETE FROM map_markers WHERE id = ?', (marker_id,))
             conn.commit()
             conn.close()
@@ -599,7 +587,6 @@ def get_user_profile(user_id):
             return None
         user = dict(row)
 
-        # Primary car
         c.execute('SELECT * FROM cars WHERE user_id = ? ORDER BY is_primary DESC, id DESC LIMIT 1', (user_id,))
         car_row = c.fetchone()
         if car_row:
@@ -613,11 +600,9 @@ def get_user_profile(user_id):
         else:
             user['car'] = None
 
-        # All cars of user
         c.execute('SELECT * FROM cars WHERE user_id = ? ORDER BY is_primary DESC', (user_id,))
         user['all_cars'] = [dict(r) for r in c.fetchall()]
 
-        # Recent battles
         c.execute('''
             SELECT b.*,
                    wc.make as winner_make, wc.model as winner_model,
@@ -639,10 +624,6 @@ def get_user_profile(user_id):
     except Exception as e:
         print("get_user_profile error:", e)
         return None
-
-# =========================================================================
-# CHAT / FORUM ENGINE FUNCTIONS
-# =========================================================================
 
 def get_chat_messages(channel='general', limit=60):
     try:
@@ -678,7 +659,6 @@ def add_chat_message(user_id, callsign, avatar, car_name, channel, message, imag
         conn = get_db()
         c = conn.cursor()
         
-        # Auto-detect video
         if image_url:
             low = image_url.lower()
             if any(low.endswith(x) for x in ['.mp4', '.webm', '.mov', '.m4v']) or any(x in low for x in ['youtube.com', 'youtu.be', 'rutube.ru', 'vk.com/video']):
@@ -729,4 +709,3 @@ init_db()
 
 if __name__ == '__main__':
     init_db()
-
