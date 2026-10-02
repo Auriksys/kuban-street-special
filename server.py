@@ -20,12 +20,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from db.database import (
-    init_db, get_db, DB_PATH, clear_all_data, seed_data, update_user_last_seen,
-    get_online_pilots, add_map_marker, get_active_map_markers, delete_map_marker,
-    update_user_profile, get_user_profile, confirm_map_marker, vote_clear_map_marker,
-    get_chat_messages, add_chat_message, like_chat_message, delete_chat_message
-)
+try:
+    from database import (
+        init_db, get_db, DB_PATH, clear_all_data, seed_data, update_user_last_seen,
+        get_online_pilots, add_map_marker, get_active_map_markers, delete_map_marker,
+        update_user_profile, get_user_profile, confirm_map_marker, vote_clear_map_marker,
+        get_chat_messages, add_chat_message, like_chat_message, delete_chat_message
+    )
+except ImportError:
+    from db.database import (
+        init_db, get_db, DB_PATH, clear_all_data, seed_data, update_user_last_seen,
+        get_online_pilots, add_map_marker, get_active_map_markers, delete_map_marker,
+        update_user_profile, get_user_profile, confirm_map_marker, vote_clear_map_marker,
+        get_chat_messages, add_chat_message, like_chat_message, delete_chat_message
+    )
 
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 UPLOADS_DIR = os.path.join(STATIC_DIR, 'uploads')

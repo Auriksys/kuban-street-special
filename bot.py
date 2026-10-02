@@ -24,7 +24,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from db.database import get_db, init_db, add_chat_message
+try:
+    from database import get_db, init_db, add_chat_message
+except ImportError:
+    from db.database import get_db, init_db, add_chat_message
 
 # Configuration
 CONFIG_PATH = os.path.join(BASE_DIR, 'bot_config.json')

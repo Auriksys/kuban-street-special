@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KUBAN STREET SPECIAL (KSS) — Реестр околоспортивных авто и уличных баталий Краснодарского края</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet Map CSS & JS (100% Reliable, Zero-API-Key, Satellite & Dark Layers) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    if (typeof L === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"><\/script>');
+    }
+  </script>
+  
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Custom Aesthetic Styling -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-[#030407] text-gray-100 min-h-screen flex flex-col font-sans selection:bg-lime-400 selection:text-black">
+
+  <!-- ======================================================== -->
+  <!-- 🔒 AUTH GATE: ACCESS LOCK SCREEN (ПОКА НЕ ВОЙДЕШЬ - НЕ ПОПАДЕШЬ) -->
+  <!-- ======================================================== -->
+  <div id="auth-gate" class="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-[#030408]">
+    <!-- Ambient Blur Glows -->
+    <div class="absolute -top-32 -left-32 w-96 h-96 bg-lime-400/15 rounded-full blur-[140px] pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-red-500/15 rounded-full blur-[140px] pointer-events-none"></div>
+
+    <div class="auth-gate-box p-7 sm:p-10 space-y-7 relative z-10 max-w-lg w-full">
+      
+      <!-- Brand Header -->
+      <div class="text-center space-y-3">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-lime-400 to-lime-600 text-black font-display font-black text-3xl shadow-xl shadow-lime-400/30">
+          KSS
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center justify-center gap-2">
+            KUBAN <span class="text-lime-400">STREET</span> SPECIAL
+          </h1>
+          <div class="flex items-center justify-center gap-2 mt-1">
+            <span class="text-[10px] bg-red-600/30 border border-red-500/50 text-red-400 px-2 py-0.5 rounded font-mono font-bold">РЕГИОН 23/93/123</span>
+            <span class="text-[10px] bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded font-mono font-bold">ЗАКРЫТАЯ ПЛАТФОРМА</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 leading-relaxed max-w-sm mx-auto">
+          Единый закрытый реестр околоспортивных авто, перевалов и ночных заездов Краснодарского края.
+        </p>
+      </div>
+
+      <!-- Quick 1-Click Instant Login (Callsign / TG Handle) -->
+      <div class="space-y-4 bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+        <label class="block text-xs font-bold text-gray-200 uppercase tracking-wider font-race">
+          ⚡ Быстрый вход в профиль:
+        </label>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="input-gate-callsign" type="text" placeholder="Ваш позывной или @никнейм_в_тг" 
+                 class="kss-input text-xs font-mono py-3 bg-black/70 border border-white/20 focus:border-lime-400 rounded-xl"
+                 onkeydown="if(event.key==='Enter') loginViaDirectCallsign()">
+          <button type="button" onclick="loginViaDirectCallsign()" class="btn-kss-volt py-3 px-6 font-black text-xs whitespace-nowrap">
+            ВОЙТИ В 1 КЛИК
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-400">
+          💡 <i>Если профиль уже существует — вы войдете в него. Если новый — профиль пилота создастся мгновенно!</i>
+        </p>
+      </div>
+
+      <!-- Telegram Bot Code Login & Synchronize -->
+      <div class="space-y-3 bg-[#111827]/70 border border-cyan-500/30 rounded-2xl p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-cyan-400 font-race flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            ВХОД ПО КОДУ ИЗ TELEGRAM:
+          </span>
+          <span class="text-[10px] text-cyan-300 font-mono">СИНХРОНИЗАЦИЯ</span>
+        </div>
+        
+        <div class="flex gap-2">
+          <input id="input-gate-tg-code" type="text" maxlength="6" placeholder="4-значный код" 
+                 class="kss-input text-center text-base font-mono tracking-widest uppercase py-2 bg-black/70 border border-white/20 focus:border-cyan-400 rounded-xl"
+                 onkeydown="if(event.key==='Enter') loginViaTelegramCode()">
+          <button type="button" onclick="loginViaTelegramCode()" class="btn-kss-cyan px-4 font-black text-xs whitespace-nowrap">
+            ВОЙТИ
+          </button>
+        </div>
+
+        <a href="https://t.me/Kuban_Streetbot?start=auth" target="_blank" class="w-full bg-[#229ed9]/15 hover:bg-[#229ed9]/25 border border-[#229ed9]/30 text-[#229ed9] py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all">
+          ✈️ 1. Получить 4-значный код в @Kuban_Streetbot
+        </a>
+      </div>
+
+      <!-- Demo Profiles (For Instant Site Testing) -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-[11px] font-mono text-gray-400 uppercase">
+          <span>Тестовые профили пилотов края:</span>
+          <span class="text-lime-400">1 КЛИК</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left transition-all hover:border-lime-400/50" onclick="selectPilotDemo(1)">
+            <div class="font-bold text-white text-xs">Марк Chaser</div>
+            <div class="text-[10px] text-lime-400 font-mono">1480 PTS • KMS Краснодар</div>
+          </button>
+          <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left transition-all hover:border-lime-400/50" onclick="selectPilotDemo(2)">
+            <div class="font-bold text-white text-xs">Влад Supra A90</div>
+            <div class="text-[10px] text-lime-400 font-mono">1620 PTS • BSTR Новоросс</div>
+          </button>
+          <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left transition-all hover:border-lime-400/50" onclick="selectPilotDemo(3)">
+            <div class="font-bold text-white text-xs">Артём Golf 7R</div>
+            <div class="text-[10px] text-lime-400 font-mono">1540 PTS • KMS Сочи</div>
+          </button>
+          <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left transition-all hover:border-lime-400/50" onclick="selectPilotDemo(4)">
+            <div class="font-bold text-white text-xs">Денис 2107 16V</div>
+            <div class="text-[10px] text-lime-400 font-mono">1390 PTS • ADF Майкоп</div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================== -->
+  <!-- 🖥️ MAIN APPLICATION ROOT (ОТКРЫВАЕТСЯ ПОСЛЕ ВХОДА)       -->
+  <div id="app-root" class="min-h-screen flex flex-col pb-20 md:pb-0 hidden">
+
+    <!-- SIDEBAR BACKDROP OVERLAY -->
+    <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+    <!-- ======================================================== -->
+    <!-- 📂 COLLAPSIBLE SIDEBAR DRAWER (БОКОВОЕ МЕНЮ)              -->
+    <!-- ======================================================== -->
+    <aside id="kss-sidebar">
+      
+      <!-- Drawer Header -->
+      <div class="p-6 border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('radar')">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center font-display font-black text-black text-xl shadow-lg shadow-lime-400/30">
+            KSS
+          </div>
+          <div>
+            <div class="text-sm font-black font-race text-white tracking-wider">KUBAN SPECIAL</div>
+            <div class="text-[10px] text-lime-400 font-mono">СЕРВЕР 23/93/123</div>
+          </div>
+        </div>
+        <button onclick="closeSidebar()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-colors">
+          ✕
+        </button>
+      </div>
+
+      <!-- Active Pilot Profile Badge in Sidebar -->
+      <div class="p-4 mx-3 my-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-3 cursor-pointer" onclick="switchTab('profile')">
+        <div class="w-11 h-11 rounded-xl overflow-hidden border border-lime-400/50 bg-gray-800 flex-shrink-0">
+          <img id="sidebar-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-full h-full object-cover">
+        </div>
+        <div class="overflow-hidden">
+          <div id="sidebar-user-callsign" class="text-xs font-bold text-white font-race truncate">Красный_Чайзер</div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span id="sidebar-user-cred" class="text-[10px] text-lime-400 font-mono font-bold">1480 PTS</span>
+            <span class="text-gray-600 text-[10px]">•</span>
+            <span id="sidebar-user-city" class="text-[10px] text-gray-400 font-mono truncate">Краснодар</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Links Container -->
+      <div class="flex-1 overflow-y-auto py-2 space-y-6">
+        
+        <!-- Group 1: Основные разделы -->
+        <div>
+          <div class="px-5 text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">
+            НАВИГАЦИЯ
+          </div>
+          <nav class="space-y-0.5">
+            <a class="sidebar-nav-link active" data-tab="radar">
+              <span>⚡</span> <span>Обзор и Радар</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="garage">
+              <span>🏎️</span> <span>Гараж боевых авто</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="spots">
+              <span>⛰️</span> <span>Споты & Яндекс Карты</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="battles">
+              <span>⚔️</span> <span>Заезды и победы</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="chat">
+              <span>💬</span> <span>Эфир пилотов & Форум</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Group 2: Рейтинги и Баталии -->
+        <div>
+          <div class="px-5 text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">
+            РЕЙТИНГИ И ДУЭЛИ
+          </div>
+          <nav class="space-y-0.5">
+            <a class="sidebar-nav-link" data-tab="leaderboard">
+              <span>🏆</span> <span>Топ пилотов Street Cred</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="teams">
+              <span>👥</span> <span>Синдикаты Кубани</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="simulator">
+              <span>🎮</span> <span>Дуэль-калькулятор</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Group 3: Инструменты и Справка -->
+        <div>
+          <div class="px-5 text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1.5">
+            СЕРВИСЫ
+          </div>
+          <nav class="space-y-0.5">
+            <a class="sidebar-nav-link" data-tab="bot">
+              <span>✈️</span> <span>Команды @Kuban_Streetbot</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="news">
+              <span>📰</span> <span>Новости и сходки</span>
+            </a>
+            <a class="sidebar-nav-link" data-tab="profile">
+              <span>🪪</span> <span>Моя лицензия пилота</span>
+            </a>
+          </nav>
+        </div>
+
+      </div>
+
+      <!-- Drawer Footer (Logout & Admin Info) -->
+      <div class="p-4 border-t border-white/10 space-y-2">
+        <a href="https://t.me/Kuban_Streetbot" target="_blank" class="w-full bg-[#229ed9]/15 hover:bg-[#229ed9]/25 border border-[#229ed9]/30 text-[#229ed9] py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all">
+          <span>✈️</span> <span>@Kuban_Streetbot</span>
+        </a>
+        <button onclick="logoutUser()" class="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all">
+          <span>🚪</span> <span>Выйти из профиля</span>
+        </button>
+      </div>
+
+    </aside>
+
+
+    <!-- ======================================================== -->
+    <!-- 🔝 MINIMALIST CLEAN TOPBAR                               -->
+    <!-- ======================================================== -->
+    <header class="kss-header">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        
+        <!-- Left: Hamburger Button + Brand Badge -->
+        <div class="flex items-center gap-3">
+          <!-- Hamburger Button to open Sidebar -->
+          <button onclick="toggleSidebar()" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center gap-2 transition-all group" title="Открыть боковое меню">
+            <span class="text-base leading-none">☰</span>
+            <span class="text-xs font-race font-bold uppercase tracking-wider hidden sm:inline text-gray-300 group-hover:text-white">МЕНЮ</span>
+          </button>
+
+          <!-- Brand Logo -->
+          <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchTab('radar')">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center font-display font-black text-black text-lg shadow-md shadow-lime-400/25">
+              KSS
+            </div>
+            <div class="hidden sm:block">
+              <span class="text-sm font-black tracking-wider font-race text-white">
+                KUBAN <span class="text-lime-400">SPECIAL</span>
+              </span>
+              <span class="text-[9px] bg-red-600/30 text-red-400 border border-red-500/40 px-1 py-0.5 rounded ml-1 font-mono font-bold">23/93</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: Core Desktop Workspace Tabs -->
+        <nav class="hidden md:flex items-center gap-1 bg-white/[0.03] border border-white/10 p-1 rounded-2xl">
+          <button class="workspace-nav-pill active" data-tab="radar" onclick="switchTab('radar')">
+            <span>⚡</span> <span>ОБЗОР</span>
+          </button>
+          <button class="workspace-nav-pill" data-tab="spots" onclick="switchTab('spots')">
+            <span>🛰️</span> <span>РАДАР</span>
+          </button>
+          <button class="workspace-nav-pill" data-tab="garage" onclick="switchTab('garage')">
+            <span>🏎️</span> <span>ГАРАЖ</span>
+          </button>
+          <button class="workspace-nav-pill" data-tab="battles" onclick="switchTab('battles')">
+            <span>⚔️</span> <span>ЗАЕЗДЫ</span>
+          </button>
+          <button class="workspace-nav-pill" data-tab="chat" onclick="switchTab('chat')">
+            <span>💬</span> <span>ЭФИР & ФОРУМ</span>
+          </button>
+          <button class="workspace-nav-pill" data-tab="profile" onclick="switchTab('profile')">
+            <span>🪪</span> <span>ПАСПОРТ</span>
+          </button>
+        </nav>
+
+        <!-- Right: Real Online Capsule + Quick Marker Button + Profile Pill -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Real Live Online Pill (Clickable) -->
+          <div class="live-presence-capsule" onclick="openModal('online-modal')" title="Пилоты на сервере прямо сейчас">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[11px] font-mono"><b id="online-presence-count" class="live-online-count text-white font-bold">1</b> <span class="text-gray-400 hidden xl:inline">В СЕТИ</span></span>
+          </div>
+
+          <!-- Quick Temporary Marker Button -->
+          <button class="bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-race font-bold py-1.5 px-3 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-sm" onclick="openAddMarkerModal()" title="Поставить оперативную метку на 20-49 мин">
+            <span>🚨</span> <span class="hidden sm:inline">+ МЕТКА ДПС</span>
+          </button>
+
+          <!-- User Profile Avatar Pill -->
+          <div class="flex items-center gap-2 pl-2 border-l border-white/10 cursor-pointer" onclick="switchTab('profile')">
+            <div class="w-8 h-8 rounded-full overflow-hidden border border-lime-400/50 bg-gray-800">
+              <img id="user-header-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-full h-full object-cover">
+            </div>
+            <div class="hidden lg:block text-left leading-tight">
+              <div id="user-header-callsign" class="text-xs font-bold text-white font-race">Пилот</div>
+              <div id="user-header-cred" class="text-[10px] text-lime-400 font-mono">1000 PTS</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+
+    <!-- ======================================================== -->
+    <!-- 📄 MAIN VIEWPORT CONTAINER                               -->
+    <!-- ======================================================== -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+      <!-- ====================================================== -->
+      <!-- 1. TAB: RADAR & OVERVIEW (ГЛАВНАЯ СТРАНИЦА - ЧИСТАЯ)   -->
+      <!-- ====================================================== -->
+      <section id="section-radar" class="tab-section space-y-8">
+        
+        <!-- Clean Luxury Hero Banner -->
+        <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#0d101a] via-[#121626] to-[#080910] border border-white/10 p-6 sm:p-12 shadow-2xl">
+          <!-- Ambient Glow Orb -->
+          <div class="absolute -right-20 -top-20 w-80 h-80 bg-lime-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div class="relative z-10 max-w-2xl space-y-5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="kss-badge badge-volt">⚡ КУБАНЬ 93/123/23</span>
+              <span class="text-xs text-gray-400 font-mono flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-lime-400"></span>
+                ПЛАТФОРМА АКТИВНА
+              </span>
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-black text-white font-hero tracking-tight leading-tight uppercase">
+              РЕЕСТР <span class="text-lime-400">СПОРТИВНОЙ ТЕХНИКИ</span> И ДОРОЖНЫЙ РАДАР
+            </h1>
+
+            <p class="text-gray-300 text-sm sm:text-base leading-relaxed font-sans max-w-xl">
+              Закрытая цифровая платформа пилотов Краснодарского края: телеметрия проектов от 250 до 900+ л.с., перевалы и замеры 100-200 / 402м, Waze-радар оперативной обстановки и протокол заездов.
+            </p>
+
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <button class="btn-kss-volt text-xs py-2.5 px-5" onclick="switchTab('garage')">
+                🏎️ РЕЕСТР ТЕХНИКИ
+              </button>
+              <button class="btn-kss-cyan text-xs py-2.5 px-5" onclick="switchTab('spots')">
+                🛰️ ДОРОЖНЫЙ РАДАР
+              </button>
+              <button class="btn-kss-outline text-xs py-2.5 px-5" onclick="switchTab('profile')">
+                🪪 ПАСПОРТ ПИЛОТА
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Key Metric Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="kss-card p-5 cursor-pointer" onclick="switchTab('garage')">
+            <div class="text-xs text-gray-400 font-mono uppercase tracking-wider">Боевых авто в реестре</div>
+            <div id="stat-cars-count" class="text-3xl font-black text-lime-400 font-race mt-1">6+</div>
+            <div class="text-[11px] text-gray-500 font-mono mt-1">Перейти в Гараж →</div>
+          </div>
+
+          <div class="kss-card p-5 cursor-pointer" onclick="switchTab('battles')">
+            <div class="text-xs text-gray-400 font-mono uppercase tracking-wider">Зафиксировано заездов</div>
+            <div id="stat-battles-count" class="text-3xl font-black text-red-400 font-race mt-1">6</div>
+            <div class="text-[11px] text-gray-500 font-mono mt-1">Посмотреть килл-лист →</div>
+          </div>
+
+          <div class="kss-card p-5 cursor-pointer" onclick="switchTab('spots')">
+            <div class="text-xs text-gray-400 font-mono uppercase tracking-wider">Спотов и перевалов</div>
+            <div id="stat-spots-count" class="text-3xl font-black text-cyan-400 font-race mt-1">7</div>
+            <div class="text-[11px] text-gray-500 font-mono mt-1">Открыть Яндекс Карты →</div>
+          </div>
+        </div>
+
+        <!-- Quick 3-Tile Action Showcase -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <div class="kss-card p-6 space-y-4 hover:border-lime-400/50 cursor-pointer" onclick="switchTab('garage')">
+            <div class="w-12 h-12 rounded-xl bg-lime-400/10 border border-lime-400/30 flex items-center justify-center text-2xl">
+              🏎️
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-race">Реестр Боевой Техники</h3>
+              <p class="text-xs text-gray-400 mt-1 leading-relaxed">
+                Паспорта проектов Краснодарского края: замеры 0-100, ролл 100-200, 402 метра, давление наддува в барах и Dragy-верификация.
+              </p>
+            </div>
+            <span class="text-xs text-lime-400 font-race font-bold block">ОТКРЫТЬ РЕЕСТР →</span>
+          </div>
+
+          <div class="kss-card p-6 space-y-4 hover:border-cyan-400/50 cursor-pointer" onclick="switchTab('spots')">
+            <div class="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-2xl">
+              🛰️
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-race">Дорожный Радар & Споты</h3>
+              <p class="text-xs text-gray-400 mt-1 leading-relaxed">
+                Оперативная обстановка на трассах края (ДПС, заезды, зацеп асфальта), точные GPS координаты и Waze-верификация 20-49 мин.
+              </p>
+            </div>
+            <span class="text-xs text-cyan-400 font-race font-bold block">СМОТРЕТЬ РАДАР →</span>
+          </div>
+
+          <div class="kss-card p-6 space-y-4 hover:border-red-500/50 cursor-pointer" onclick="switchTab('battles')">
+            <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-2xl text-red-400">
+              ⚔️
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white font-race">Протокол Заездов & Дуэли</h3>
+              <p class="text-xs text-gray-400 mt-1 leading-relaxed">
+                Официальные ночные заезды 402м, ролл 60-200 и тоге. Фиксация побед, начисление Street Cred и инженерный расчет шансов.
+              </p>
+            </div>
+            <span class="text-xs text-red-400 font-race font-bold block">СМОТРЕТЬ КИЛЛ-ЛИСТ →</span>
+          </div>
+
+        </div>
+
+        <!-- Latest Cars Section Preview -->
+        <div class="space-y-4 pt-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-2.5 h-2.5 rounded-full bg-lime-400"></span>
+              <h2 class="text-xl font-black text-white font-race tracking-wider">СВЕЖИЕ БОЕВЫЕ МАШИНЫ В ГАРАЖЕ</h2>
+            </div>
+            <button class="text-xs text-lime-400 hover:underline font-race font-bold" onclick="switchTab('garage')">
+              ВСЕ АВТО КРАЯ →
+            </button>
+          </div>
+          <div id="radar-cars-preview" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Injected via garage.js -->
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 2. TAB: GARAGE (КАТАЛОГ АВТОМОБИЛЕЙ)                   -->
+      <!-- ====================================================== -->
+      <section id="section-garage" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              🏎️ РЕЕСТР СПОРТИВНОЙ ТЕХНИКИ КУБАНИ
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Официальные паспорта боевых болидов, драгстеров и тоге-снарядов (23/93/123) с подтвержденной телеметрией 0-100, 100-200 и 402м</p>
+          </div>
+          
+          <div class="flex gap-2">
+            <button class="btn-kss-volt text-xs py-2 px-4 flex items-center gap-1.5" onclick="openModal('car-register-modal')">
+              <span>+</span> <span>ВНЕСТИ АВТО</span>
+            </button>
+            <button class="btn-kss-cyan text-xs py-2 px-4 hidden sm:flex items-center gap-1.5" onclick="switchTab('bot')">
+              <span>✈️</span> <span>ЧЕРЕЗ БОТА</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and Drivetrain Filters -->
+        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div class="w-full sm:w-96 relative">
+            <input type="text" id="garage-search-input" placeholder="Поиск по марке, модели или мотору (1JZ, B58...)" 
+                   class="kss-input text-xs pl-9 bg-black/50 border border-white/10 rounded-xl"
+                   oninput="filterGarageCars()">
+            <span class="absolute left-3 top-3 text-xs text-gray-500">🔍</span>
+          </div>
+
+          <div class="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+            <button class="btn-kss-outline active text-xs py-1.5 px-3" data-drivetrain-filter="ALL" onclick="setDrivetrainFilter('ALL')">Все приводы</button>
+            <button class="btn-kss-outline text-xs py-1.5 px-3" data-drivetrain-filter="RWD" onclick="setDrivetrainFilter('RWD')">RWD (Задний)</button>
+            <button class="btn-kss-outline text-xs py-1.5 px-3" data-drivetrain-filter="AWD" onclick="setDrivetrainFilter('AWD')">AWD (Полный)</button>
+            <button class="btn-kss-outline text-xs py-1.5 px-3" data-drivetrain-filter="FWD" onclick="setDrivetrainFilter('FWD')">FWD (Передний)</button>
+          </div>
+        </div>
+
+        <!-- Cars Grid Container -->
+        <div id="garage-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Injected via garage.js -->
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 3. TAB: SPOTS & YANDEX MAPS (ЯНДЕКС КАРТЫ И СПОТЫ)    -->
+      <!-- ====================================================== -->
+      <section id="section-spots" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              🛰️ ДОРОЖНЫЙ РАДАР & СПОТЫ КУБАНИ
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Интерактивная карта трасс и перевалов Краснодарского края с телеметрией GPS, Waze-верификацией и заездами</p>
+          </div>
+          
+          <div class="flex gap-2 flex-wrap">
+            <button class="btn-kss-red text-xs py-2 px-4 flex items-center gap-1.5 shadow-lg shadow-red-500/20" onclick="openAddMarkerModal()">
+              <span>🚨</span> <span>+ ПОСТАВИТЬ МЕТКУ (20-49 МИН)</span>
+            </button>
+            <button class="btn-kss-volt text-xs py-2 px-4" onclick="openModal('battle-register-modal')">
+              + ВПИСАТЬ ЗАЕЗД НА СПОТЕ
+            </button>
+          </div>
+        </div>
+
+        <!-- Road Weather & Surface Grip Telemetry Bar -->
+        <div class="road-weather-bar p-3.5 flex items-center justify-between overflow-x-auto gap-4 text-xs font-mono">
+          <div class="flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-lime-400"></span>
+            <span class="text-gray-400 uppercase">OZ MALL (Краснодар):</span>
+            <span class="text-white font-bold">+18°C, СУХО</span>
+            <span class="text-lime-400 font-bold bg-lime-400/10 px-1.5 py-0.5 rounded border border-lime-400/30">ЗАЦЕП 98%</span>
+          </div>
+          <span class="text-gray-600 hidden sm:inline">•</span>
+          <div class="flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="text-gray-400 uppercase">СЕМЬ ВЕТРОВ (Новоросс):</span>
+            <span class="text-white font-bold">+16°C, ВЕТЕР 12 м/с</span>
+            <span class="text-cyan-300 font-bold bg-cyan-400/10 px-1.5 py-0.5 rounded border border-cyan-400/30">ЗАЦЕП 88%</span>
+          </div>
+          <span class="text-gray-600 hidden sm:inline">•</span>
+          <div class="flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span class="text-gray-400 uppercase">ШАУМЯН (Перевал):</span>
+            <span class="text-white font-bold">+14°C, ПЫЛЬ</span>
+            <span class="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">ГРАВИЙ 52%</span>
+          </div>
+          <span class="text-gray-600 hidden sm:inline">•</span>
+          <div class="flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+            <span class="text-gray-400 uppercase">БОЛЬШОЙ АХУН (Сочи):</span>
+            <span class="text-white font-bold">+15°C, ВЛАЖНО</span>
+            <span class="text-blue-300 font-bold bg-blue-400/10 px-1.5 py-0.5 rounded border border-blue-400/30">ЗАЦЕП 75%</span>
+          </div>
+        </div>
+
+        <!-- Yandex Map Container -->
+        <div class="relative space-y-2">
+          <div id="spots-yandex-map" class="w-full h-[520px] rounded-2xl overflow-hidden border border-white/10 relative shadow-2xl">
+            <!-- Yandex Map is mounted here via static/js/map.js -->
+          </div>
+
+          <!-- Coordinate Inspector Pill (User Click Feedback) -->
+          <div id="selected-coord-badge" class="p-3 bg-black/80 border border-white/10 rounded-xl font-mono text-xs text-gray-300 flex items-center justify-between flex-wrap gap-2">
+            <span>📍 <b>Инспектор координат:</b> Кликните на любое место карты, чтобы получить точные координаты (Широта, Долгота) и открыть в Яндекс.Картах!</span>
+            <span class="text-lime-400 font-bold">ИНТЕГРАЦИЯ ЯНДЕКС КАРТ</span>
+          </div>
+        </div>
+
+        <!-- Live Temporary Markers Feed (20-49 мин) -->
+        <div class="kss-card p-4 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2 border-b border-white/5 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+              <h3 class="text-xs font-bold text-white font-race tracking-wider">
+                ЖИВЫЕ МЕТКИ НА ДОРОГАХ КРАЯ (ДПС, СХОДКИ, ОПАСНОСТЬ):
+              </h3>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="live-markers-count" class="text-xs font-mono text-lime-400 font-bold">0 активных меток</span>
+              <button onclick="loadLiveMarkers()" class="text-xs text-gray-400 hover:text-white transition-colors" title="Обновить">🔄</button>
+              <button onclick="openAddMarkerModal()" class="text-[11px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded font-bold font-race">
+                + Поставить метку
+              </button>
+            </div>
+          </div>
+          
+          <div id="live-markers-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- Injected via map.js -->
+          </div>
+        </div>
+
+        <!-- Spot Type Filter Buttons -->
+        <div class="flex gap-2 border-b border-white/10 pb-4 overflow-x-auto">
+          <button class="btn-kss-outline active text-xs py-1.5 px-4" data-spot-filter="ALL">Все локации</button>
+          <button class="btn-kss-outline text-xs py-1.5 px-4" data-spot-filter="Дрэг">🏁 Дрэг 402м</button>
+          <button class="btn-kss-outline text-xs py-1.5 px-4" data-spot-filter="Тоге">⛰️ Горное Тоге</button>
+          <button class="btn-kss-outline text-xs py-1.5 px-4" data-spot-filter="Ролл-он">⚡ Ролл-он трассы</button>
+        </div>
+
+        <!-- Spots Cards Grid -->
+        <div id="spots-cards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Injected via map.js -->
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 4. TAB: BATTLES & KILL-LIST (ЗАЕЗДЫ И ПОБЕДЫ)          -->
+      <!-- ====================================================== -->
+      <section id="section-battles" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              ⚔️ КИЛЛ-ЛИСТ И ЗАФИКСИРОВАННЫЕ ЗАЕЗДЫ
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Официальные победы пилотов Кубани в ночных схватках 402м, ролл и тоге</p>
+          </div>
+          
+          <div class="flex gap-2">
+            <button class="btn-kss-red text-xs py-2 px-4 flex items-center gap-1.5" onclick="openModal('battle-register-modal')">
+              <span>⚔️</span> <span>+ ВПИСАТЬ ЗАЕЗД</span>
+            </button>
+            <button class="btn-kss-volt text-xs py-2 px-4 hidden sm:flex items-center gap-1.5" onclick="switchTab('simulator')">
+              <span>🎮</span> <span>ДУЭЛЬ-КАЛЬКУЛЯТОР</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Battles Feed Container -->
+        <div id="battles-feed-container" class="space-y-4">
+          <!-- Injected via battles.js -->
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 5. TAB: HEAD-TO-HEAD DUEL SIMULATOR                    -->
+      <!-- ====================================================== -->
+      <section id="section-simulator" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6">
+          <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+            🎮 СИМУЛЯТОР УЛИЧНОЙ ДУЭЛИ
+          </h2>
+          <p class="text-xs text-gray-400 mt-1">Математический расчет шансов на основе мощности, массы, типа привода и наддува</p>
+        </div>
+
+        <div class="kss-card p-6 sm:p-10 space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            <!-- Car 1 Selector -->
+            <div class="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-red-500/30">
+              <span class="text-xs font-mono font-bold text-red-400">🔴 ПИЛОТ 1:</span>
+              <select id="sim-car-1" class="kss-input text-xs font-mono bg-black/60 rounded-xl">
+                <!-- Injected via app.js -->
+              </select>
+              <div id="sim-car-1-preview" class="text-xs text-gray-400"></div>
+            </div>
+
+            <!-- Car 2 Selector -->
+            <div class="space-y-3 p-5 rounded-2xl bg-white/[0.02] border border-cyan-500/30">
+              <span class="text-xs font-mono font-bold text-cyan-400">🔵 ПИЛОТ 2:</span>
+              <select id="sim-car-2" class="kss-input text-xs font-mono bg-black/60 rounded-xl">
+                <!-- Injected via app.js -->
+              </select>
+              <div id="sim-car-2-preview" class="text-xs text-gray-400"></div>
+            </div>
+
+          </div>
+
+          <!-- Discipline Selector -->
+          <div class="flex justify-center gap-2">
+            <button class="btn-kss-outline active text-xs py-2 px-4" data-sim-discipline="Дрэг 402м">🏁 Дрэг 402м</button>
+            <button class="btn-kss-outline text-xs py-2 px-4" data-sim-discipline="Тоге (Спуск)">⛰️ Тоге (Спуск)</button>
+            <button class="btn-kss-outline text-xs py-2 px-4" data-sim-discipline="Ролл 60-200">⚡ Ролл 60-200</button>
+          </div>
+
+          <div class="text-center">
+            <button class="btn-kss-volt py-3 px-8 text-sm font-black" onclick="runDuelSimulation()">
+              ⚔️ РАССЧИТАТЬ ИСХОД СХВАТКИ
+            </button>
+          </div>
+
+          <!-- Result Card -->
+          <div id="sim-result-box" class="hidden p-6 rounded-2xl bg-white/5 border border-lime-400/40 space-y-4">
+            <!-- Injected via battles.js -->
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 6. TAB: TEAMS & SYNDICATES                             -->
+      <!-- ====================================================== -->
+      <section id="section-teams" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              👥 СИНДИКАТЫ И КОМАНДЫ КУБАНИ
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Официальные уличные объединения Краснодара, Новороссийска и Сочи</p>
+          </div>
+        </div>
+
+        <div id="teams-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Injected via app.js -->
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 7. TAB: LEADERBOARD (РЕЙТИНГ ПИЛОТОВ)                 -->
+      <!-- ====================================================== -->
+      <section id="section-leaderboard" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6">
+          <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+            🏆 ТАБЛИЦА СЛАВЫ: ТОП ПИЛОТОВ STREET CRED
+          </h2>
+          <p class="text-xs text-gray-400 mt-1">Рейтинг авторитета ELO, рассчитанный по результатам заездов на дорогах края</p>
+        </div>
+
+        <div class="kss-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-white/5 border-b border-white/10 text-gray-400 font-mono uppercase">
+                <tr>
+                  <th class="p-4">Ранг</th>
+                  <th class="p-4">Пилот / Позывной</th>
+                  <th class="p-4">Город</th>
+                  <th class="p-4">Боевой Автомобиль</th>
+                  <th class="p-4">Победы / Поражения</th>
+                  <th class="p-4 text-right">Street Cred</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-tbody" class="divide-y divide-white/5">
+                <!-- Injected via app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 8. TAB: NEWS & MEETUPS                                 -->
+      <!-- ====================================================== -->
+      <section id="section-news" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              📰 НОВОСТИ И АНОНСЫ СХОДОК
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Анонсы заездов на OZ Mall, перевалы и регламенты сходок</p>
+          </div>
+        </div>
+
+        <div id="news-cards-container" class="space-y-4">
+          <!-- Injected via news.js -->
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 9. TAB: TELEGRAM BOT COMMANDS MANUAL (СПРАВКА И АНКЕТА) -->
+      <!-- ====================================================== -->
+      <section id="section-bot" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              ✈️ TELEGRAM-БОТ @Kuban_Streetbot
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Полное руководство по командам, пошаговой анкете и синхронизации с сайтом</p>
+          </div>
+          
+          <a href="https://t.me/Kuban_Streetbot" target="_blank" class="btn-kss-volt text-xs py-2 px-5">
+            🤖 ОТКРЫТЬ @Kuban_Streetbot В TELEGRAM
+          </a>
+        </div>
+
+        <!-- Step-by-Step Car Registration Workflow Banner -->
+        <div class="kss-card p-6 sm:p-8 space-y-6 border-lime-400/30">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-lime-400 animate-ping"></span>
+            <h3 class="text-lg font-black text-white font-race">КАК ВНЕСТИ СВОЙ АВТОМОБИЛЬ НА САЙТ (ЗА 1 МИНУТУ):</h3>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div class="bg-black/60 p-4 rounded-xl border border-white/10 space-y-1">
+              <span class="text-xs font-mono font-bold text-lime-400">ШАГ 1:</span>
+              <div class="font-bold text-white text-xs">Марка и Модель</div>
+              <p class="text-[11px] text-gray-400">Напишите марку авто боту (например: <i>Toyota Mark II</i> или <i>Golf R</i>)</p>
+            </div>
+
+            <div class="bg-black/60 p-4 rounded-xl border border-white/10 space-y-1">
+              <span class="text-xs font-mono font-bold text-lime-400">ШАГ 2:</span>
+              <div class="font-bold text-white text-xs">Мощность (л.с.)</div>
+              <p class="text-[11px] text-gray-400">Напишите реальные лошадиные силы (например: <i>380</i> или <i>500</i>)</p>
+            </div>
+
+            <div class="bg-black/60 p-4 rounded-xl border border-white/10 space-y-1">
+              <span class="text-xs font-mono font-bold text-lime-400">ШАГ 3:</span>
+              <div class="font-bold text-white text-xs">Тип привода</div>
+              <p class="text-[11px] text-gray-400">Выберите кнопку: <i>RWD (Задний)</i>, <i>AWD (Полный)</i> или <i>FWD</i></p>
+            </div>
+
+            <div class="bg-black/60 p-4 rounded-xl border border-white/10 space-y-1">
+              <span class="text-xs font-mono font-bold text-lime-400">ШАГ 4:</span>
+              <div class="font-bold text-white text-xs">Город базирования</div>
+              <p class="text-[11px] text-gray-400">Краснодар, Новороссийск, Сочи, Армавир или другой город края</p>
+            </div>
+
+            <div class="bg-black/60 p-4 rounded-xl border border-white/10 space-y-1">
+              <span class="text-xs font-mono font-bold text-lime-400">ШАГ 5:</span>
+              <div class="font-bold text-white text-xs">Фотография авто</div>
+              <p class="text-[11px] text-gray-400">Отправьте фото машины в чат (или нажмите 'Пропустить')</p>
+            </div>
+          </div>
+
+          <div class="p-3 bg-lime-400/10 border border-lime-400/30 rounded-xl text-xs text-lime-300 flex items-center justify-between">
+            <span>🎉 Сразу после отправки машина мгновенно появится в Гараже на сайте с вашим именем пилота!</span>
+            <a href="https://t.me/Kuban_Streetbot?start=car" target="_blank" class="font-bold underline ml-2">Начать анкету в боте →</a>
+          </div>
+        </div>
+
+        <!-- Grouped Bot Commands Cheatsheet -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Group 1: Автомобили и Гараж -->
+          <div class="kss-card p-6 space-y-4">
+            <h4 class="text-sm font-black text-lime-400 font-race flex items-center gap-2">
+              <span>🏎️</span> <span>АВТОМОБИЛИ И ГАРАЖ:</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-lime-300 font-bold">/car</div>
+                <div class="text-gray-300 mt-0.5">Запустить интерактивную 5-шаговую анкету добавления авто в гараж сайта.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-lime-300 font-bold">/mycar</div>
+                <div class="text-gray-300 mt-0.5">Показать карточку вашего зарегистрированного авто и спек-лист.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-lime-300 font-bold">/garage</div>
+                <div class="text-gray-300 mt-0.5">Список самых мощных боевых автомобилей края.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 2: Профиль и Вход на сайт -->
+          <div class="kss-card p-6 space-y-4">
+            <h4 class="text-sm font-black text-cyan-400 font-race flex items-center gap-2">
+              <span>🪪</span> <span>ПРОФИЛЬ И АВТОРИЗАЦИЯ:</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">/auth</div>
+                <div class="text-gray-300 mt-0.5">Получить 4-значный код и прямую ссылку для входа на сайт в 1 клик.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">/profile</div>
+                <div class="text-gray-300 mt-0.5">Моя цифровая лицензия пилота KSS, рейтинг и статистика заездов.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">/callsign [Твой_Позывной]</div>
+                <div class="text-gray-300 mt-0.5">Сменить свой позывной в системе (например: <code>/callsign Ночной_Буст</code>).</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">/chat</div>
+                <div class="text-gray-300 mt-0.5">Свежие сообщения в уличном радиоэфире и форуме пилотов Кубани.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3: Заезды и Дуэли -->
+          <div class="kss-card p-6 space-y-4">
+            <h4 class="text-sm font-black text-red-400 font-race flex items-center gap-2">
+              <span>⚔️</span> <span>ЗАЕЗДЫ И РЕЙТИНГ:</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-red-300 font-bold">/top</div>
+                <div class="text-gray-300 mt-0.5">Топ-10 лучших пилотов края по рейтингу авторитета Street Cred.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-red-300 font-bold">/sim</div>
+                <div class="text-gray-300 mt-0.5">Симулятор дуэли двух машин на 402 метра с расчетом шансов.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-red-300 font-bold">/win</div>
+                <div class="text-gray-300 mt-0.5">Шаблон фиксации победы в уличном заезде прямо из чата.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 4: Локации и Помощь -->
+          <div class="kss-card p-6 space-y-4">
+            <h4 class="text-sm font-black text-yellow-400 font-race flex items-center gap-2">
+              <span>⛰️</span> <span>СПОТЫ И СИСТЕМА:</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-yellow-300 font-bold">/spots</div>
+                <div class="text-gray-300 mt-0.5">Список всех перевалов и прямиков края со сложностью и временем сбора.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-yellow-300 font-bold">/help</div>
+                <div class="text-gray-300 mt-0.5">Полная справка по всем функциям и возможностям бота.</div>
+              </div>
+              <div class="p-3 bg-black/60 rounded-xl border border-white/10">
+                <div class="font-mono text-yellow-300 font-bold">/cancel</div>
+                <div class="text-gray-300 mt-0.5">Прервать заполнение текущей анкеты автомобиля.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 10. TAB: LIVE STREET CHATTER & FORUM (ЭФИР & ФОРУМ)     -->
+      <!-- ====================================================== -->
+      <section id="section-chat" class="tab-section hidden space-y-6">
+        
+        <div class="border-b border-white/10 pb-5 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              📻 УЛИЧНЫЙ ЭФИР & ФОРУМ КУБАНИ
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Закрытый радиоканал связи и форум пилотов Краснодарского края (23/93/123)</p>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-mono font-bold">
+              <span class="w-2 h-2 rounded-full bg-lime-400 animate-pulse"></span>
+              ЭФИР 23 ОНЛАЙН
+            </span>
+            <button onclick="loadChatMessages()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-colors" title="Обновить сообщения">
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Channels Switcher Bar -->
+        <div id="chat-channels-bar" class="flex items-center gap-2 overflow-x-auto pb-1">
+          <!-- Injected via chat.js -->
+        </div>
+
+        <!-- Main Chat Box Container -->
+        <div class="kss-card overflow-hidden flex flex-col border border-white/10 shadow-2xl">
+          
+          <!-- Channel Topic Header -->
+          <div class="p-4 bg-white/[0.02] border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 id="chat-channel-header-title" class="text-sm font-bold font-race text-white">#эфир-кубани</h3>
+              <p id="chat-channel-header-desc" class="text-[11px] text-gray-400">Главный открытый канал пилотов края</p>
+            </div>
+            <div class="text-[11px] font-mono text-gray-500">
+              ⚡ Автообновление каждые 3.5 сек
+            </div>
+          </div>
+
+          <!-- Messages Scroll Area -->
+          <div id="chat-messages-scroll" class="p-4 sm:p-6 space-y-4 max-h-[520px] min-h-[380px] overflow-y-auto">
+            <div id="chat-messages-container" class="space-y-3">
+              <!-- Injected via chat.js -->
+            </div>
+          </div>
+
+          <!-- Media Attachment & Upload Tray (Photo & Video) -->
+          <div id="chat-image-input-box" class="hidden px-4 pt-3 pb-3 bg-black/70 border-t border-white/5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-race font-bold text-gray-300 flex items-center gap-1.5">
+                <span>📎</span> <span>ПРИКРЕПИТЬ МЕДИА (ФОТО ИЛИ ВИДЕО):</span>
+              </span>
+              <button onclick="toggleChatImageInput(false)" class="text-gray-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+
+            <!-- Upload Tabs / Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="file" id="chat-file-upload-input" accept="image/*,video/*" class="hidden" onchange="handleChatFileUpload(this)">
+              <button type="button" onclick="document.getElementById('chat-file-upload-input').click()" class="btn-kss-volt text-xs py-2 px-3 flex items-center gap-1.5 font-bold">
+                <span>📁</span> <span>ВЫБРАТЬ С УСТРОЙСТВА</span>
+              </button>
+              <span class="text-[11px] text-gray-500 font-mono">или ссылка:</span>
+              <div class="flex-1 min-w-[200px] flex items-center gap-1">
+                <input type="text" id="chat-image-input" placeholder="URL фото или видео (YouTube, Rutube, VK)..." class="kss-input text-xs py-1.5 px-3 bg-black/60 border border-white/10 rounded-lg flex-1 font-mono" oninput="onChatUrlInput(this.value)">
+              </div>
+            </div>
+
+            <!-- Upload Progress / Status Indicator -->
+            <div id="chat-upload-status" class="hidden text-xs font-mono text-lime-400 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-lime-400 animate-ping"></span>
+              <span id="chat-upload-status-text">Загрузка файла...</span>
+            </div>
+
+            <!-- Attachment Live Preview Box -->
+            <div id="chat-attachment-preview" class="hidden p-2.5 bg-black/80 rounded-xl border border-lime-400/30 flex items-center justify-between gap-3">
+              <div id="chat-preview-media-container" class="flex items-center gap-2.5 overflow-hidden">
+                <!-- Injected via chat.js -->
+              </div>
+              <button type="button" onclick="clearChatAttachment()" class="text-gray-400 hover:text-red-400 p-1 rounded-lg hover:bg-white/5 transition-colors" title="Удалить прикрепление">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Message Input Bar -->
+          <div class="p-4 bg-[#0a0d14] border-t border-white/10 flex items-center gap-2 sm:gap-3">
+            <button type="button" onclick="toggleChatImageInput()" id="chat-attach-btn" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-all text-sm flex-shrink-0 flex items-center gap-1" title="Прикрепить фото или видео">
+              <span>📷</span>
+              <span class="text-xs">🎥</span>
+            </button>
+
+            <div class="flex-1 relative">
+              <input type="text" id="chat-message-input" placeholder="Напишите в эфир... (Enter для отправки)" class="kss-input text-xs py-2.5 px-4 bg-black/70 border border-white/10 focus:border-lime-400 rounded-xl w-full">
+            </div>
+
+            <button type="button" onclick="sendChatMessage()" class="btn-kss-volt py-2.5 px-5 text-xs font-black whitespace-nowrap flex items-center gap-1.5 shadow-lg shadow-lime-400/20">
+              <span>ОТПРАВИТЬ</span>
+              <span class="hidden sm:inline">✈️</span>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ====================================================== -->
+      <!-- 11. TAB: PILOT PROFILE & LICENSE                       -->
+      <!-- ====================================================== -->
+      <section id="section-profile" class="tab-section hidden space-y-8">
+        
+        <div class="border-b border-white/10 pb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-race tracking-wider flex items-center gap-3">
+              🪪 ЛИЦЕНЗИЯ И ПРОФИЛЬ ПИЛОТА
+            </h2>
+            <p class="text-xs text-gray-400 mt-1">Цифровой идентификатор в закрытом реестре Kuban Street Special</p>
+          </div>
+          
+          <button class="bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 text-xs py-2 px-4 rounded-xl font-bold" onclick="logoutUser()">
+            🚪 ВЫЙТИ ИЗ СИСТЕМЫ
+          </button>
+        </div>
+
+        <div id="profile-card-container">
+          <!-- Injected via auth.js -->
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <!-- ======================================================== -->
+    <!-- 🟢 MODAL: REAL ONLINE PILOTS ON SERVER                   -->
+    <!-- ======================================================== -->
+    <div id="online-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-lg">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div>
+              <h3 class="text-base font-black text-white font-race">ПИЛОТЫ В СЕТИ ПРЯМО СЕЙЧАС</h3>
+              <p class="text-xs text-gray-400">Реальный онлайн платформы (обновляется каждые 30 секунд)</p>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-white text-lg p-2" data-close-modal="online-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div id="online-pilots-list" class="space-y-2 max-h-96 overflow-y-auto">
+            <!-- Injected via fetchOnlinePilots() in auth.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- 🛡️ MODAL: SYSTEM WATCHDOG & HIGH-RELIABILITY MONITOR     -->
+    <!-- ======================================================== -->
+    <div id="watchdog-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-lg">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🛡️</span>
+            <div>
+              <h3 class="text-base font-black text-white font-race">МОНИТОРИНГ НАДЕЖНОСТИ KSS 24/7</h3>
+              <p class="text-xs text-gray-400">Система самовосстановления и постоянного контроля доступности</p>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-white text-lg p-2" data-close-modal="watchdog-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div id="watchdog-status-content" class="space-y-3">
+            <!-- Injected via app.js -->
+            <div class="py-8 text-center text-gray-500 font-mono text-xs animate-pulse">
+              Получение телеметрии службы Watchdog...
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button onclick="refreshWatchdogStatus()" class="btn-kss-outline flex-1 py-2.5 text-xs font-bold">
+              🔄 ОБНОВИТЬ ДАННЫЕ
+            </button>
+            <button onclick="closeModal('watchdog-modal')" class="btn-kss-volt flex-1 py-2.5 text-xs font-black">
+              ПОНЯТНО
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: CAR DETAIL (GRAN TURISMO SPECS PASS)             -->
+    <!-- ======================================================== -->
+    <div id="car-detail-modal" class="kss-modal-overlay">
+      <div id="car-detail-modal-body" class="kss-modal-box max-w-3xl">
+        <!-- Injected via garage.js -->
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: ADD CAR MANUAL FORM                               -->
+    <!-- ======================================================== -->
+    <div id="car-register-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-xl">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-lg font-black text-white font-race">ДОБАВИТЬ БОЕВОЙ АВТОМОБИЛЬ</h3>
+          <button class="text-gray-400 hover:text-white" data-close-modal="car-register-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="p-4 bg-lime-400/10 border border-lime-400/30 rounded-xl text-xs text-lime-300 flex items-center justify-between">
+            <span>💡 <b>Совет:</b> Быстрее всего внести машину через бота @Kuban_Streetbot по команде <code>/car</code>!</span>
+            <button onclick="closeModal('car-register-modal'); switchTab('bot')" class="btn-kss-volt text-[11px] py-1 px-3 ml-2 whitespace-nowrap">Открыть анкету</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Марка:</label>
+              <input id="input-car-make" type="text" placeholder="Toyota, BMW, ВАЗ" class="kss-input text-xs font-mono">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Модель:</label>
+              <input id="input-car-model" type="text" placeholder="Mark II, M5, 2107" class="kss-input text-xs font-mono">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Мощность (л.с.):</label>
+              <input id="input-car-hp" type="number" placeholder="380" class="kss-input text-xs font-mono">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Привод:</label>
+              <select id="input-car-drivetrain" class="kss-input text-xs font-mono">
+                <option value="RWD">RWD (Задний)</option>
+                <option value="AWD">AWD (Полный)</option>
+                <option value="FWD">FWD (Передний)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Фотография авто (URL или загрузка с устройства):</label>
+            <div class="flex gap-2">
+              <input id="input-car-photo" type="text" placeholder="https://... или выберите файл" class="kss-input text-xs font-mono flex-1">
+              <button type="button" onclick="document.getElementById('file-car-photo-upload').click()" class="btn-kss-outline text-xs px-3 whitespace-nowrap">📷 Выбрать фото</button>
+              <input type="file" id="file-car-photo-upload" accept="image/*" class="hidden" onchange="uploadGenericFile(this, 'input-car-photo', 'car-photo-preview')">
+            </div>
+            <div id="car-photo-preview" class="hidden mt-2 p-2 bg-black/60 rounded-xl border border-lime-400/30 text-xs text-lime-400 flex items-center justify-between">
+              <span id="car-photo-preview-name"></span>
+              <button type="button" onclick="clearGenericUpload('input-car-photo', 'car-photo-preview')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+          </div>
+
+          <button class="btn-kss-volt w-full py-3 text-xs font-black" onclick="submitQuickCarForm()">
+            СОХРАНИТЬ АВТОМОБИЛЬ В РЕЕСТР
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: LOG BATTLE FORM                                   -->
+    <!-- ======================================================== -->
+    <div id="battle-register-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-xl">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-lg font-black text-white font-race">ЗАРЕГИСТРИРОВАТЬ ЗАЕЗД И ПОБЕДУ</h3>
+          <button class="text-gray-400 hover:text-white" data-close-modal="battle-register-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Дисциплина:</label>
+            <select id="input-battle-discipline" class="kss-input text-xs font-mono">
+              <option value="Дрэг 402м">🏁 Дрэг 402м</option>
+              <option value="Тоге (Спуск)">⛰️ Тоге (Спуск)</option>
+              <option value="Тоге (Подъем)">⛰️ Тоге (Подъем)</option>
+              <option value="Ролл 60-200">⚡ Ролл 60-200</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Спот / Трасса:</label>
+            <select id="battle-spot-id" class="kss-input text-xs font-mono">
+              <!-- Injected via map.js -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Автомобиль победителя:</label>
+              <select id="input-battle-winner-car" class="kss-input text-xs font-mono">
+                <!-- Injected via app.js -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Кого объехал (Авто проигравшего):</label>
+              <input id="input-battle-loser-custom" type="text" placeholder="BMW M5, Golf R..." class="kss-input text-xs font-mono">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Разрыв на финише:</label>
+            <input id="input-battle-gap" type="text" placeholder="2 корпуса, полсекунды..." class="kss-input text-xs font-mono">
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Видео заезда или фото замеров Dragy (необязательно):</label>
+            <div class="flex gap-2">
+              <input id="input-battle-video" type="text" placeholder="https://... или выберите файл" class="kss-input text-xs font-mono flex-1">
+              <button type="button" onclick="document.getElementById('file-battle-proof-upload').click()" class="btn-kss-outline text-xs px-3 whitespace-nowrap">🎥 Видео / 📷 Фото</button>
+              <input type="file" id="file-battle-proof-upload" accept="video/*,image/*" class="hidden" onchange="uploadGenericFile(this, 'input-battle-video', 'battle-proof-preview')">
+            </div>
+            <div id="battle-proof-preview" class="hidden mt-2 p-2 bg-black/60 rounded-xl border border-red-500/30 text-xs text-red-400 flex items-center justify-between">
+              <span id="battle-proof-preview-name"></span>
+              <button type="button" onclick="clearGenericUpload('input-battle-video', 'battle-proof-preview')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+          </div>
+
+          <button class="btn-kss-red w-full py-3 text-xs font-black" onclick="submitBattleForm()">
+            ⚔️ ЗАФИКСИРОВАТЬ ПОБЕДУ
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: AUTH / SWITCH PROFILE                             -->
+    <!-- ======================================================== -->
+    <div id="auth-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-lg">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <h3 class="text-base font-black text-white font-race">УПРАВЛЕНИЕ ПРОФИЛЕМ ПИЛОТА</h3>
+          <button class="text-gray-400 hover:text-white" data-close-modal="auth-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-5">
+          <div class="space-y-3 bg-white/5 border border-white/10 rounded-2xl p-4">
+            <span class="text-xs font-mono text-lime-400 font-bold">СМЕНИТЬ ПОЗЫВНОЙ ИЛИ АККАУНТ:</span>
+            <div class="flex gap-2">
+              <input id="input-quick-callsign" type="text" placeholder="Новый позывной или @никнейм" class="kss-input text-xs font-mono">
+              <button onclick="loginViaDirectCallsign()" class="btn-kss-volt px-4 text-xs font-black">ВОЙТИ</button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <span class="text-xs font-mono text-gray-400">БЫСТРЫЙ ВЫБОР ДЕМО-ПИЛОТА:</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left" onclick="selectPilotDemo(1)">
+                <div class="font-bold text-white text-xs">Марк Chaser</div>
+                <div class="text-[10px] text-lime-400 font-mono">1480 PTS • KMS Краснодар</div>
+              </button>
+              <button class="bg-white/5 hover:bg-white/10 border border-white/10 p-2.5 rounded-xl text-left" onclick="selectPilotDemo(2)">
+                <div class="font-bold text-white text-xs">Влад Supra A90</div>
+                <div class="text-[10px] text-lime-400 font-mono">1620 PTS • BSTR Новоросс</div>
+              </button>
+            </div>
+          </div>
+
+          <button onclick="logoutUser()" class="btn-kss-red w-full py-2.5 text-xs font-black">
+            🚪 ВЫЙТИ ИЗ СИСТЕМЫ (ЗАБЛОКИРОВАТЬ ЭКРАН)
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: ADD TEMPORARY MAP MARKER (20-49 MIN TTL)          -->
+    <!-- ======================================================== -->
+    <div id="add-marker-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-lg">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📍</span>
+            <div>
+              <h3 class="text-base font-black text-white font-race">ПОСТАВИТЬ МЕТКУ НА КАРТУ</h3>
+              <p class="text-xs text-gray-400">Живой радар дорожной обстановки (время жизни 20-49 минут)</p>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-white text-lg p-2" data-close-modal="add-marker-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <!-- Category Selector -->
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 font-race">
+              Категория метки:
+            </label>
+            <select id="marker-input-cat" class="kss-input text-xs font-mono bg-black/60 rounded-xl">
+              <option value="ДПС">🚨 Засада ДПС / Мобильный экипаж / Радар</option>
+              <option value="Сходка">🏁 Сходка пилотов / Уличный заезд / Дрэг</option>
+              <option value="Опасность">⚠️ Опасность / ДТП / Масло на асфальте</option>
+              <option value="Сообщение">💬 Сообщение пилота / Сбор колонны</option>
+            </select>
+          </div>
+
+          <!-- Message Text -->
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 font-race">
+              Сообщение пилота:
+            </label>
+            <textarea id="marker-input-msg" rows="3" placeholder="Например: Стоят за поворотом с радаром, тормозят за тонировку и выхлоп..." class="kss-input text-xs rounded-xl p-3 bg-black/60"></textarea>
+          </div>
+
+          <!-- Duration (Strictly 20 - 49 min) -->
+          <div class="p-4 bg-white/[0.03] border border-white/10 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-gray-300 uppercase tracking-wider font-race">
+                ⏱️ Время жизни метки:
+              </label>
+              <span id="marker-duration-display" class="text-sm font-mono font-bold text-lime-400">30 минут</span>
+            </div>
+
+            <!-- Slider Range 20 to 49 -->
+            <input id="marker-input-duration" type="range" min="20" max="49" value="30" step="1" 
+                   class="w-full accent-lime-400 cursor-pointer"
+                   oninput="onDurationSliderChange(this.value)">
+
+            <!-- Quick Duration Buttons -->
+            <div class="flex gap-2 pt-1">
+              <button type="button" onclick="setMarkerDuration(20)" class="btn-kss-outline text-[11px] py-1 px-2.5 flex-1">20 мин</button>
+              <button type="button" onclick="setMarkerDuration(30)" class="btn-kss-outline text-[11px] py-1 px-2.5 flex-1">30 мин</button>
+              <button type="button" onclick="setMarkerDuration(40)" class="btn-kss-outline text-[11px] py-1 px-2.5 flex-1">40 мин</button>
+              <button type="button" onclick="setMarkerDuration(49)" class="btn-kss-outline text-[11px] py-1 px-2.5 flex-1">49 мин</button>
+            </div>
+            <p class="text-[11px] text-gray-400 italic">По истечении таймера метка автоматически удалится с карты и сервера.</p>
+          </div>
+
+          <!-- Photo Attachment -->
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 font-race">
+              Фотография обстановки (необязательно):
+            </label>
+            <div class="flex gap-2">
+              <input id="marker-input-photo" type="text" placeholder="https://... или загрузите фото" class="kss-input text-xs font-mono bg-black/60 flex-1">
+              <button type="button" onclick="document.getElementById('file-marker-photo-upload').click()" class="btn-kss-outline text-xs px-3 whitespace-nowrap">📷 Фото с места</button>
+              <input type="file" id="file-marker-photo-upload" accept="image/*" class="hidden" onchange="uploadGenericFile(this, 'marker-input-photo', 'marker-photo-preview')">
+            </div>
+            <div id="marker-photo-preview" class="hidden mt-2 p-2 bg-black/60 rounded-xl border border-lime-400/30 text-xs text-lime-400 flex items-center justify-between">
+              <span id="marker-photo-preview-name"></span>
+              <button type="button" onclick="clearGenericUpload('marker-input-photo', 'marker-photo-preview')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+          </div>
+
+          <!-- Coordinates (Readonly / Pre-filled) -->
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-gray-400 mb-1 font-mono">Широта (Lat):</label>
+              <input id="marker-input-lat" type="text" class="kss-input text-xs font-mono bg-black/40" placeholder="45.03550">
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1 font-mono">Долгота (Lng):</label>
+              <input id="marker-input-lng" type="text" class="kss-input text-xs font-mono bg-black/40" placeholder="38.97530">
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="submitAddMarker()" class="btn-kss-volt w-full py-3 text-xs font-black shadow-lg shadow-lime-400/20">
+              🚀 ОПУБЛИКОВАТЬ МЕТКУ НА КАРТЕ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- MODAL: EDIT USER PROFILE                                 -->
+    <!-- ======================================================== -->
+    <div id="edit-profile-modal" class="kss-modal-overlay">
+      <div class="kss-modal-box max-w-xl">
+        <div class="p-6 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">✏️</span>
+            <div>
+              <h3 class="text-base font-black text-white font-race">РЕДАКТИРОВАНИЕ ПРОФИЛЯ ПИЛОТА</h3>
+              <p class="text-xs text-gray-400">Обновите ваши данные в цифровой лицензии KSS</p>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-white text-lg p-2" data-close-modal="edit-profile-modal">✕</button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Позывной пилота:</label>
+              <input id="edit-profile-callsign" type="text" placeholder="Красный_Чайзер" class="kss-input text-xs font-mono bg-black/60">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Имя / Фамилия:</label>
+              <input id="edit-profile-name" type="text" placeholder="Марк Осипов" class="kss-input text-xs bg-black/60">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Город Кубани:</label>
+              <select id="edit-profile-city" class="kss-input text-xs bg-black/60">
+                <option value="Краснодар">Краснодар</option>
+                <option value="Новороссийск">Новороссийск</option>
+                <option value="Сочи">Сочи</option>
+                <option value="Армавир">Армавир</option>
+                <option value="Туапсе">Туапсе</option>
+                <option value="Геленджик">Геленджик</option>
+                <option value="Анапа">Анапа</option>
+                <option value="Горячий Ключ">Горячий Ключ</option>
+                <option value="Славянск-на-Кубани">Славянск-на-Кубани</option>
+                <option value="Тихорецк">Тихорецк</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Telegram никнейм:</label>
+              <input id="edit-profile-tg" type="text" placeholder="@pilot_krd" class="kss-input text-xs font-mono bg-black/60">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Фото профиля / Аватарка (URL или файл):</label>
+            <div class="flex gap-2">
+              <input id="edit-profile-avatar" type="text" placeholder="https://... или выберите фото" class="kss-input text-xs font-mono bg-black/60 flex-1">
+              <button type="button" onclick="document.getElementById('file-profile-avatar-upload').click()" class="btn-kss-outline text-xs px-3 whitespace-nowrap">📷 Загрузить</button>
+              <input type="file" id="file-profile-avatar-upload" accept="image/*" class="hidden" onchange="uploadGenericFile(this, 'edit-profile-avatar')">
+            </div>
+            <!-- Avatar presets -->
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-[11px] text-gray-400">Быстрые аватары:</span>
+              <button type="button" onclick="selectAvatarPreset('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200')" class="w-7 h-7 rounded-full overflow-hidden border border-white/20 hover:border-lime-400">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50" class="w-full h-full object-cover">
+              </button>
+              <button type="button" onclick="selectAvatarPreset('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200')" class="w-7 h-7 rounded-full overflow-hidden border border-white/20 hover:border-lime-400">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50" class="w-full h-full object-cover">
+              </button>
+              <button type="button" onclick="selectAvatarPreset('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200')" class="w-7 h-7 rounded-full overflow-hidden border border-white/20 hover:border-lime-400">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50" class="w-full h-full object-cover">
+              </button>
+              <button type="button" onclick="selectAvatarPreset('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200')" class="w-7 h-7 rounded-full overflow-hidden border border-white/20 hover:border-lime-400">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50" class="w-full h-full object-cover">
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Статус / Цитата пилота:</label>
+            <input id="edit-profile-bio" type="text" placeholder="Touge & Drag. Всегда на связи на ночном OZ Mall." class="kss-input text-xs bg-black/60">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-300 uppercase mb-1 font-race">Страница VK (необязательно):</label>
+            <input id="edit-profile-vk" type="text" placeholder="https://vk.com/..." class="kss-input text-xs font-mono bg-black/60">
+          </div>
+
+          <div class="pt-2">
+            <button onclick="saveProfileUpdates()" class="btn-kss-volt w-full py-3 text-xs font-black shadow-lg shadow-lime-400/20">
+              💾 СОХРАНИТЬ ИЗМЕНЕНИЯ ПРОФИЛЯ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ======================================================== -->
+    <!-- TOAST NOTIFICATIONS CONTAINER                            -->
+    <!-- ======================================================== -->
+    <div id="toast-container" class="kss-toast-container"></div>
+
+
+    <!-- ======================================================== -->
+    <!-- FOOTER                                                   -->
+    <!-- ======================================================== -->
+    <footer class="border-t border-white/5 py-8 mt-16 bg-[#07080c] text-xs text-gray-500 font-mono">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <span class="text-gray-300 font-bold font-race">KUBAN STREET SPECIAL (KSS)</span> © 2026. Краснодарский край.
+          <div class="text-[11px] text-gray-600 mt-0.5">Краснодар • Новороссийск • Сочи • Туапсе • Армавир</div>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="https://t.me/Kuban_Streetbot" target="_blank" class="hover:text-lime-400 transition-colors">Бот @Kuban_Streetbot</a>
+          <span>•</span>
+          <a href="https://t.me/kubanstreet" target="_blank" class="hover:text-cyan-400 transition-colors">Канал @kubanstreet</a>
+          <span>•</span>
+          <button onclick="openWatchdogModal()" class="text-lime-400 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer bg-white/5 py-1 px-2.5 rounded-lg border border-lime-400/30" title="Нажмите для проверки надежности сервера и Watchdog">
+            <span class="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+            СЕТЬ 23/93/123 ОНЛАЙН 🛡️
+          </button>
+        </div>
+      </div>
+    </footer>
+    
+    <!-- ======================================================== -->
+    <!-- 📱 MOBILE BOTTOM NAVIGATION DOCK (1-THUMB TACTILE BAR)    -->
+    <!-- ======================================================== -->
+    <nav id="mobile-bottom-bar" class="md:hidden fixed bottom-0 left-0 right-0 z-[2000] px-2 py-2 flex items-center justify-around">
+      <button class="mobile-nav-btn active flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2.5 rounded-xl transition-all" data-tab="radar" onclick="switchTab('radar')">
+        <span class="text-lg leading-none">⚡</span>
+        <span class="tracking-wider">Обзор</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2.5 rounded-xl transition-all" data-tab="spots" onclick="switchTab('spots')">
+        <span class="text-lg leading-none">🛰️</span>
+        <span class="tracking-wider">Радар</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2.5 rounded-xl transition-all" data-tab="garage" onclick="switchTab('garage')">
+        <span class="text-lg leading-none">🏎️</span>
+        <span class="tracking-wider">Гараж</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2.5 rounded-xl transition-all" data-tab="battles" onclick="switchTab('battles')">
+        <span class="text-lg leading-none">⚔️</span>
+        <span class="tracking-wider">Заезды</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2 rounded-xl transition-all" data-tab="chat" onclick="switchTab('chat')">
+        <span class="text-lg leading-none">💬</span>
+        <span class="tracking-wider">Эфир</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2.5 rounded-xl transition-all" data-tab="profile" onclick="switchTab('profile')">
+        <span class="text-lg leading-none">🪪</span>
+        <span class="tracking-wider">Паспорт</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center gap-1 text-[10px] font-race py-1 px-2 rounded-xl transition-all" onclick="toggleSidebar()">
+        <span class="text-lg leading-none">☰</span>
+        <span class="tracking-wider">Еще</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="/js/app.js"></script>
+  <script src="/js/garage.js"></script>
+  <script src="/js/battles.js"></script>
+  <script src="/js/map.js"></script>
+  <script src="/js/news.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/profile.js"></script>
+  <script src="/js/chat.js"></script>
+</body>
+</html>
